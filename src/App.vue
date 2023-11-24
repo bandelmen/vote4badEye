@@ -1,26 +1,37 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app">
+    <div class="container">
+      <div class="left-side">
+        <VotePanel />
+      </div>
+      <div class="right-side">
+        <ResultPanel />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import ResultPanel from './components/ResultPanel.vue';
+import VotePanel from './components/VotePanel.vue';
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
-  }
-}
+    VotePanel,
+    ResultPanel,
+  },
+};
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+.container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.left-side,
+.right-side {
+  width: 48%; /* 设置左右两侧宽度 */
 }
 </style>
