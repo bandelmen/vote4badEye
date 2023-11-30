@@ -25,6 +25,11 @@ export default {
 </script>
 
 <style>
+* {
+  padding: 0;
+  margin: 0;
+}
+
 .container {
   display: flex;
   justify-content: space-between;
@@ -32,6 +37,20 @@ export default {
 
 .left-side,
 .right-side {
-  width: 48%; /* 设置左右两侧宽度 */
+  width: 50%;
+  margin: 10px;
+}
+
+/* 将左右布局转换为垂直布局，适应手机屏幕 */
+@media screen and (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .left-side,
+  .right-side {
+    width: fit-content;
+    margin: 10px 10px;
+  }
 }
 </style>
