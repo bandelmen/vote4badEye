@@ -9,6 +9,7 @@
         <ResultPanel />
       </div>
     </div>
+    <el-backtop :right="50" :bottom="80" />
   </div>
 </template>
 

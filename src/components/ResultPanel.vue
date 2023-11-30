@@ -182,14 +182,12 @@ export default {
       });
     },
     topThreeTotalResults() {
-      const sortedUsers = this.sortedUsers.slice(0, 3); // 获取前三名用户信息
+      const sortedUsers = this.sortedUsers.slice(0, 3);
       if (sortedUsers.length === 3) {
-        // 交换第一名和第二名的位置
         const temp = sortedUsers[0];
         sortedUsers[0] = sortedUsers[1];
         sortedUsers[1] = temp;
       }
-      console.log(sortedUsers);
       return sortedUsers;
     },
   },
@@ -205,13 +203,10 @@ export default {
 </script>
 
 <style>
-.section-title {
-  margin-bottom: 10px;
-}
-
 .medal-container {
   display: flex;
   justify-content: space-around;
+  margin-top: 10px;
 }
 
 .user-info-weekly {
@@ -231,7 +226,6 @@ export default {
   margin-bottom: 10px;
   padding: 10px;
   background-color: #f5f5f5;
-
   border-radius: 4px;
 }
 
@@ -244,15 +238,15 @@ export default {
 }
 
 .gold-medal {
-  font-size: 28px; /* 金牌较大 */
+  font-size: 35px; /* 金牌较大 */
 }
 
 .silver-medal {
-  font-size: 24px; /* 银牌中等大小 */
+  font-size: 28px; /* 银牌中等大小 */
 }
 
 .bronze-medal {
-  font-size: 20px; /* 铜牌较小 */
+  font-size: 24px; /* 铜牌较小 */
 }
 
 .user-detail-name {
