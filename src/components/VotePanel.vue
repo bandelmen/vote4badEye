@@ -186,10 +186,11 @@ export default {
 
 .card-box {
   cursor: pointer;
-  width: 31%;
+  width: 30%;
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.12);
+  transition: background-color 0.5s ease;
 }
 
 .card-header {

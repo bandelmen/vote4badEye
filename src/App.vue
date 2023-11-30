@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <HeaderPanel />
     <div class="container">
       <div class="left-side">
         <VotePanel />
@@ -14,12 +15,14 @@
 <script>
 import ResultPanel from './components/ResultPanel.vue';
 import VotePanel from './components/VotePanel.vue';
+import HeaderPanel from './components/HeaderPanel.vue';
 
 export default {
   name: 'App',
   components: {
     VotePanel,
     ResultPanel,
+    HeaderPanel,
   },
 };
 </script>
