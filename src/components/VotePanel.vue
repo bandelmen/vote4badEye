@@ -124,7 +124,6 @@ export default {
             message: '不能选择超过三个烂眼儿',
             type: 'error',
             onClose: () => {
-              // 在消息关闭时重置标志位，以便下次可以再次触发错误提示
               this.showErrorMsg = false;
             },
           });
@@ -140,13 +139,9 @@ export default {
           type: 'warning',
         })
           .then(() => {
-            // 用户点击了确定按钮
             this.submitVotes();
           })
-          .catch(() => {
-            // 用户点击了取消按钮或点击遮罩层触发的关闭
-            // 可以不做任何操作
-          });
+          .catch(() => {});
       } else {
         this.$confirm('确定要选他们三个吗？', '提示', {
           confirmButtonText: '确定',
@@ -154,22 +149,16 @@ export default {
           type: 'warning',
         })
           .then(() => {
-            // 用户点击了确定按钮
             this.submitVotes();
           })
-          .catch(() => {
-            // 用户点击了取消按钮或点击遮罩层触发的关闭
-            // 可以不做任何操作
-          });
+          .catch(() => {});
       }
     },
     submitVotes() {
-      // 展示成功的消息提示
       this.$message({
         message: '投票提交成功！',
         type: 'success',
       });
-      // 这里可以添加提交逻辑，例如向后端发送投票选项数据等
     },
   },
 };
@@ -181,7 +170,7 @@ export default {
   flex-wrap: wrap;
   justify-content: left;
   gap: 10px;
-  margin: 10px -5px 10px 0; /* 设置 margin 使卡片之间产生间距 */
+  margin: 10px -5px 10px 0;
 }
 
 .card-box {
@@ -201,12 +190,14 @@ export default {
 }
 
 .card-avatar {
-  margin-right: 5px; /* 设置适当的右边距 */
+  display: flex;
+  align-items: center;
+  margin-right: 5px;
 }
 
 .card-name {
   font-weight: bold;
-  font-size: 1em; /* 使用 em 作为字体大小单位 */
+  font-size: 1em;
 }
 
 .vote-bg {

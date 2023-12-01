@@ -53,7 +53,7 @@ export default {
 
   .left-side,
   .right-side {
-    width: fit-content;
+    width: 100%;
     margin: 10px 10px;
   }
 }

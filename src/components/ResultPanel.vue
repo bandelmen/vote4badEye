@@ -19,11 +19,12 @@
   <div class="history-section">
     <h1 class="section-title">历史总计排名</h1>
     <div v-for="(user, index) in totalResults" :key="index" class="user-info-history">
-      <span class="medal">{{ getRankEmoji(index) }}</span>
-      <div class="user-details">
+      <div class="history-section-left">
+        <div class="medal">{{ getRankEmoji(index) }}</div>
+        <el-avatar class="user-detail-avatar" :size="30" :src="user.avatar" />
         <div class="user-detail-name">{{ user.name }}</div>
-        <div class="user-detail-vote_num">总票数: {{ user.totalVotes }}</div>
       </div>
+      <div class="user-detail-vote_num">总票数: {{ user.totalVotes }}</div>
     </div>
   </div>
 </template>
@@ -206,35 +207,50 @@ export default {
 .medal-container {
   display: flex;
   justify-content: space-around;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .user-info-weekly {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 10px;
   padding: 10px;
   width: 31%;
   border-radius: 5px;
   background-color: #f5f5f5;
 }
 
+.section-title {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.history-section-left {
+  display: flex;
+  align-items: center;
+}
+
+.user-detail-avatar{
+  margin-right: 10px;
+}
+
 .user-info-history {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
   padding: 10px;
   background-color: #f5f5f5;
   border-radius: 4px;
+  height: 40px;
 }
 
 .medal {
   font-size: 18px;
   margin-right: 15px;
-  width: 30px;
   text-align: center;
   flex-shrink: 0;
+  width: 30px;
 }
 
 .gold-medal {
@@ -250,7 +266,6 @@ export default {
 }
 
 .user-detail-name {
-  margin-bottom: 5px;
   font-size: 18px;
 }
 
