@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { ElMessage } from 'element-plus';
+import { showMessage } from '@/utils/common';
 
 export default {
   name: 'VotePanel',
@@ -102,7 +102,7 @@ export default {
         },
       ],
       selectedUsers: [], // 存储用户选择的投票选项
-      isShowErrorMsg: false, // 控制是否显示错误提示的标志位
+      isShowErrorMsg: false,
     };
   },
   methods: {
@@ -118,22 +118,25 @@ export default {
         this.selectedUsers.push(user.id);
       } else {
         // 如果已经显示了错误提示，则不再重复显示
-        if (!this.showErrorMsg) {
-          this.showErrorMsg = true;
-          ElMessage({
-            message: '不能选择超过三个烂眼儿',
-            type: 'error',
-            onClose: () => {
-              this.showErrorMsg = false;
-            },
+        if (!this.isShowErrorMsg) {
+          this.isShowErrorMsg = true;
+          showMessage('不能选择超过三个烂眼儿', 'warning', () => {
+            this.isShowErrorMsg = false;
           });
         }
       }
     },
     showConfirmation() {
-      if (this.selectedUsers.length < 3) {
+      if (this.selectedUsers.length === 0) {
+        if (!this.isShowErrorMsg) {
+          this.isShowErrorMsg = true;
+          showMessage('请选择至少一个人进行投票', 'warning', () => {
+            this.isShowErrorMsg = false;
+          });
+        }
+      } else if (this.selectedUsers.length < 3) {
         let num = 3 - this.selectedUsers.length;
-        this.$confirm('还可以继续选个 ' + num + ' 烂眼儿', '提示', {
+        this.$confirm(`还可以继续选个 ${num} 烂眼儿，是否要提交投票`, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning',
@@ -155,10 +158,7 @@ export default {
       }
     },
     submitVotes() {
-      this.$message({
-        message: '投票提交成功！',
-        type: 'success',
-      });
+      showMessage('投票提交成功！', 'success', () => {});
     },
   },
 };

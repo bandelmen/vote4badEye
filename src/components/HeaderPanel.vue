@@ -35,6 +35,9 @@
       <el-form-item label="用户名：" :label-width="formLabelWidth">
         <el-input v-model="form.name" placeholder="请输入用户名" />
       </el-form-item>
+      <el-form-item label="邮箱：" :label-width="formLabelWidth">
+        <el-input v-model="form.email" placeholder="请输入邮箱" />
+      </el-form-item>
       <el-form-item label="密码：" :label-width="formLabelWidth">
         <el-input v-model="form.pwd" type="password" placeholder="请输入密码" show-password />
       </el-form-item>
@@ -49,6 +52,9 @@
 </template>
 
 <script>
+import { showMessage } from '@/utils/common';
+import axios from 'axios';
+
 export default {
   name: 'HeaderPanel',
   data() {
@@ -58,9 +64,11 @@ export default {
       form: {
         name: '',
         pwd: '',
+        email: '',
       },
       formLabelWidth: '100px',
       screenWidth: 0,
+      isShowErrorMsg: false,
     };
   },
   computed: {
@@ -96,9 +104,41 @@ export default {
     cancelRegisterDialog() {
       this.showRegisterDialog = false;
     },
-    confirmRegisterDialog() {
-      this.showRegisterDialog = false;
+    async confirmRegisterDialog() {
+      try {
+        const response = await axios.post('http://localhost:3000/auth/register', {
+          username: this.form.name,
+          password: this.form.pwd,
+          email: this.form.email,
+        });
+
+        if (response.data.code === 200) {
+          console.log('注册成功', response.data);
+          if (!this.isShowErrorMsg) {
+            this.isShowErrorMsg = true;
+            showMessage('注册成功', 'success', () => {
+              this.isShowErrorMsg = false;
+              this.showRegisterDialog = false;
+            });
+          }
+        } else {
+          if (!this.isShowErrorMsg) {
+            this.isShowErrorMsg = true;
+            showMessage('邮箱已被注册', 'warning', () => {
+              this.isShowErrorMsg = false;
+            });
+          }
+        }
+      } catch (error) {
+        if (!this.isShowErrorMsg) {
+          this.isShowErrorMsg = true;
+          showMessage('请求失败', 'error', () => {
+            this.isShowErrorMsg = false;
+          });
+        }
+      }
     },
+
     updateScreenWidth() {
       // 更新屏幕宽度
       this.screenWidth = window.innerWidth;
