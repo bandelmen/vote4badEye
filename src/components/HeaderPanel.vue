@@ -17,7 +17,6 @@
             <el-avatar class="user-info_avatar" :src="userInfo.avatar" size="default"
           /></el-tooltip>
         </el-upload>
-
         <span class="user-info_username">{{ userInfo.username }}</span>
       </div>
     </div>
@@ -92,7 +91,7 @@ export default {
       },
       userInfo: {
         email: '',
-        username: '暗黑烤鸭',
+        username: '',
         userId: '',
         avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
       },
@@ -112,13 +111,46 @@ export default {
     },
   },
   mounted() {
-    // 在组件挂载后获取屏幕宽度
     this.screenWidth = window.innerWidth;
 
-    // 监听窗口变化，动态更新屏幕宽度
     window.addEventListener('resize', this.updateScreenWidth);
+
+    const token = localStorage.getItem('token');
+    console.log('token');
+
+    if (token) {
+      axios
+        .post('http://localhost:3000/auth/verifyToken', { token })
+        .then((response) => {
+          console.log(response);
+          if (response.data.code === 200) {
+            this.isLoggedIn = true;
+
+            const storedUsername = localStorage.getItem('username');
+            const storedUserId = localStorage.getItem('userId');
+
+            this.userInfo.username = storedUsername;
+            this.userInfo.userId = storedUserId;
+          } else {
+            this.logout();
+          }
+        })
+        .catch(() => {
+          this.logout();
+        });
+    }
   },
   methods: {
+    logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('email');
+
+      this.userInfo.username = '';
+      this.userInfo.userId = '';
+      this.isLoggedIn = false;
+    },
     showLogin() {
       this.showLoginDialog = true;
     },
@@ -156,6 +188,10 @@ export default {
         this.updateUserInfo(data);
         this.isLoggedIn = true;
       });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username);
+      localStorage.setItem('userId', data.id);
+      localStorage.setItem('email', data.email);
     },
     clearLoginForm() {
       this.loginForm.email = '';
