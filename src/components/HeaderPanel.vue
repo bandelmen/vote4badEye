@@ -24,12 +24,12 @@
   </header>
 
   <el-dialog v-model="showLoginDialog" title="用户登录" :show-close="false" :width="getDialogWidth">
-    <el-form :model="form">
+    <el-form :model="loginForm">
       <el-form-item label="邮箱：" :label-width="formLabelWidth">
-        <el-input v-model="form.mail" placeholder="请输入邮箱" />
+        <el-input v-model="loginForm.email" placeholder="请输入邮箱" />
       </el-form-item>
       <el-form-item label="密码：" :label-width="formLabelWidth">
-        <el-input v-model="form.pwd" type="password" placeholder="请输入密码" show-password />
+        <el-input v-model="loginForm.pwd" type="password" placeholder="请输入密码" show-password />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -46,15 +46,20 @@
     :show-close="false"
     :width="getDialogWidth"
   >
-    <el-form :model="form">
+    <el-form :model="registerForm">
       <el-form-item label="用户名：" :label-width="formLabelWidth">
-        <el-input v-model="form.username" placeholder="请输入用户名" />
+        <el-input v-model="registerForm.username" placeholder="请输入用户名" />
       </el-form-item>
       <el-form-item label="邮箱：" :label-width="formLabelWidth">
-        <el-input v-model="form.email" placeholder="请输入邮箱" />
+        <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
       </el-form-item>
       <el-form-item label="密码：" :label-width="formLabelWidth">
-        <el-input v-model="form.pwd" type="password" placeholder="请输入密码" show-password />
+        <el-input
+          v-model="registerForm.pwd"
+          type="password"
+          placeholder="请输入密码"
+          show-password
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -76,10 +81,14 @@ export default {
     return {
       showLoginDialog: false,
       showRegisterDialog: false,
-      form: {
+      registerForm: {
         username: '',
         pwd: '',
         email: '',
+      },
+      loginForm: {
+        email: '',
+        pwd: '',
       },
       userInfo: {
         email: '',
@@ -116,22 +125,61 @@ export default {
     cancelLoginDialog() {
       this.showLoginDialog = false;
     },
-    confirmLoginDialog() {
-      this.showLoginDialog = false;
-      // TODO:处理登录逻辑
-    },
     showRegister() {
       this.showRegisterDialog = true;
     },
     cancelRegisterDialog() {
       this.showRegisterDialog = false;
     },
+    // 登录模块
+    async confirmLoginDialog() {
+      try {
+        const response = await axios.post('http://localhost:3000/auth/login', {
+          email: this.loginForm.email,
+          password: this.loginForm.pwd,
+        });
+
+        if (response.data.code === 200) {
+          this.handleSuccessfulLogin(response.data.data);
+        } else {
+          this.handleLoginFailure();
+        }
+      } catch (error) {
+        this.handleRequestFailure();
+      }
+    },
+    handleSuccessfulLogin(data) {
+      console.log('登录成功', data);
+      showMessage('登录成功', 'success', () => {
+        this.clearLoginForm();
+        this.closeLoginDialog();
+        this.updateUserInfo(data);
+        this.isLoggedIn = true;
+      });
+    },
+    clearLoginForm() {
+      this.loginForm.email = '';
+      this.loginForm.pwd = '';
+    },
+    closeLoginDialog() {
+      this.isShowErrorMsg = false;
+      this.showLoginDialog = false;
+    },
+    handleLoginFailure() {
+      if (!this.isShowErrorMsg) {
+        this.isShowErrorMsg = true;
+        showMessage('用户名或密码错误', 'warning', () => {
+          this.isShowErrorMsg = false;
+        });
+      }
+    },
+    // 注册模块
     async confirmRegisterDialog() {
       try {
         const response = await axios.post('http://localhost:3000/auth/register', {
-          username: this.form.username,
-          password: this.form.pwd,
-          email: this.form.email,
+          username: this.registerForm.username,
+          password: this.registerForm.pwd,
+          email: this.registerForm.email,
         });
 
         if (response.data.code === 200) {
@@ -147,10 +195,19 @@ export default {
       console.log('注册成功', data);
       showMessage('注册成功', 'success', () => {
         this.clearRegistrationForm();
-        this.updateUserInfo(data);
         this.closeRegisterDialog();
+        this.updateUserInfo(data);
         this.isLoggedIn = true;
       });
+    },
+    clearRegistrationForm() {
+      this.registerForm.username = '';
+      this.registerForm.email = '';
+      this.registerForm.pwd = '';
+    },
+    closeRegisterDialog() {
+      this.isShowErrorMsg = false;
+      this.showRegisterDialog = false;
     },
     handleRegistrationFailure() {
       if (!this.isShowErrorMsg) {
@@ -160,6 +217,12 @@ export default {
         });
       }
     },
+    // 通用模块
+    updateUserInfo(data) {
+      this.userInfo.email = data.email;
+      this.userInfo.username = data.username;
+      this.userInfo.userId = data.userId;
+    },
     handleRequestFailure() {
       if (!this.isShowErrorMsg) {
         this.isShowErrorMsg = true;
@@ -168,20 +231,7 @@ export default {
         });
       }
     },
-    clearRegistrationForm() {
-      this.form.username = '';
-      this.form.email = '';
-      this.form.pwd = '';
-    },
-    updateUserInfo(data) {
-      this.userInfo.email = data.email;
-      this.userInfo.username = data.username;
-      this.userInfo.userId = data.userId;
-    },
-    closeRegisterDialog() {
-      this.isShowErrorMsg = false;
-      this.showRegisterDialog = false;
-    },
+
     updateScreenWidth() {
       this.screenWidth = window.innerWidth;
     },
