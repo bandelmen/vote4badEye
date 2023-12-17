@@ -6,18 +6,29 @@
         <el-button type="success" @click="showRegister">注册</el-button>
       </div>
       <div class="user-info" v-else>
-        <el-upload
-          class="avatar-uploader"
-          action=""
-          :show-file-list="false"
-          :on-success="handleAvatarSuccess"
-          :before-upload="beforeAvatarUpload"
-        >
-          <el-tooltip class="box-item" effect="light" content="点击上传头像" placement="bottom">
-            <el-avatar class="user-info_avatar" :src="userInfo.avatar" size="default"
-          /></el-tooltip>
-        </el-upload>
+        <el-avatar class="user-info_avatar" :src="userInfo.avatar" size="default" />
         <span class="user-info_username">{{ userInfo.username }}</span>
+        <el-dropdown>
+          <el-icon class="setting_icon" :size="20"><Setting /></el-icon>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item>
+                <el-upload
+                  class="avatar-uploader"
+                  action=""
+                  :show-file-list="false"
+                  :on-success="handleAvatarSuccess"
+                  :before-upload="beforeAvatarUpload"
+                >
+                  <el-icon><Picture /></el-icon>上传头像
+                </el-upload>
+              </el-dropdown-item>
+              <el-dropdown-item @click="logout"
+                ><el-icon><SwitchButton /></el-icon>退出登录</el-dropdown-item
+              >
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
   </header>
@@ -25,10 +36,21 @@
   <el-dialog v-model="showLoginDialog" title="用户登录" :show-close="false" :width="getDialogWidth">
     <el-form :model="loginForm">
       <el-form-item label="邮箱：" :label-width="formLabelWidth">
-        <el-input v-model="loginForm.email" placeholder="请输入邮箱" />
+        <el-input
+          v-model="loginForm.email"
+          placeholder="请输入邮箱"
+          @keyup.enter="focusLoginPasswordInput"
+        />
       </el-form-item>
       <el-form-item label="密码：" :label-width="formLabelWidth">
-        <el-input v-model="loginForm.pwd" type="password" placeholder="请输入密码" show-password />
+        <el-input
+          ref="loginPasswordInput"
+          v-model="loginForm.pwd"
+          type="password"
+          placeholder="请输入密码"
+          show-password
+          @keyup.enter="confirmLoginDialog"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -47,17 +69,28 @@
   >
     <el-form :model="registerForm">
       <el-form-item label="用户名：" :label-width="formLabelWidth">
-        <el-input v-model="registerForm.username" placeholder="请输入用户名" />
+        <el-input
+          v-model="registerForm.username"
+          placeholder="请输入用户名"
+          @keyup.enter="focusRegisterEmailInput"
+        />
       </el-form-item>
       <el-form-item label="邮箱：" :label-width="formLabelWidth">
-        <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
+        <el-input
+          ref="registerEmailInput"
+          v-model="registerForm.email"
+          placeholder="请输入邮箱"
+          @keyup.enter="focusRegisterPasswordInput"
+        />
       </el-form-item>
       <el-form-item label="密码：" :label-width="formLabelWidth">
         <el-input
+          ref="registerPasswordInput"
           v-model="registerForm.pwd"
           type="password"
           placeholder="请输入密码"
           show-password
+          @keyup.enter="confirmRegisterDialog"
         />
       </el-form-item>
     </el-form>
@@ -116,7 +149,7 @@ export default {
     window.addEventListener('resize', this.updateScreenWidth);
 
     const token = localStorage.getItem('token');
-    console.log('token');
+    console.log(token, '=token');
 
     if (token) {
       axios
@@ -131,13 +164,15 @@ export default {
 
             this.userInfo.username = storedUsername;
             this.userInfo.userId = storedUserId;
-          } else {
-            this.logout();
           }
         })
         .catch(() => {
+          console.log('error token');
           this.logout();
         });
+    } else {
+      console.log('no token');
+      this.logout();
     }
   },
   methods: {
@@ -165,6 +200,11 @@ export default {
     },
     // 登录模块
     async confirmLoginDialog() {
+      if (!this.loginForm.email || !this.loginForm.pwd) {
+        this.showEmptyFieldsAlert();
+        return;
+      }
+
       try {
         const response = await axios.post('http://localhost:3000/auth/login', {
           email: this.loginForm.email,
@@ -209,8 +249,15 @@ export default {
         });
       }
     },
+    focusLoginPasswordInput() {
+      this.$refs.loginPasswordInput.focus();
+    },
     // 注册模块
     async confirmRegisterDialog() {
+      if (!this.registerForm.username || !this.registerForm.email || !this.registerForm.pwd) {
+        this.showEmptyFieldsAlert();
+        return;
+      }
       try {
         const response = await axios.post('http://localhost:3000/auth/register', {
           username: this.registerForm.username,
@@ -253,6 +300,12 @@ export default {
         });
       }
     },
+    focusRegisterEmailInput() {
+      this.$refs.registerEmailInput.focus();
+    },
+    focusRegisterPasswordInput() {
+      this.$refs.registerPasswordInput.focus();
+    },
     // 通用模块
     updateUserInfo(data) {
       this.userInfo.email = data.email;
@@ -267,7 +320,6 @@ export default {
         });
       }
     },
-
     updateScreenWidth() {
       this.screenWidth = window.innerWidth;
     },
@@ -290,7 +342,6 @@ export default {
       if (!isLt2M) {
         if (!this.isShowErrorMsg) {
           this.isShowErrorMsg = true;
-          this.$message.error('');
           showMessage('上传头像图片大小不能超过 2MB', 'error', () => {
             this.isShowErrorMsg = false;
           });
@@ -298,6 +349,14 @@ export default {
       }
 
       return isJPG && isLt2M;
+    },
+    showEmptyFieldsAlert() {
+      if (!this.isShowErrorMsg) {
+        this.isShowErrorMsg = true;
+        showMessage('请填写输入框', 'error', () => {
+          this.isShowErrorMsg = false;
+        });
+      }
     },
   },
 };
@@ -336,6 +395,10 @@ export default {
 
 .user-info_username {
   font-weight: bold;
+  margin-left: 10px;
+}
+
+.setting_icon {
   margin-left: 10px;
 }
 
