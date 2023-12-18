@@ -105,6 +105,7 @@
 
 <script>
 import { showMessage } from '@/utils/common';
+import { eventBus } from '@/utils/event-bus';
 import axios from 'axios';
 
 export default {
@@ -279,9 +280,8 @@ export default {
       showMessage('注册成功', 'success', () => {
         this.clearRegistrationForm();
         this.closeRegisterDialog();
-        this.updateUserInfo(data);
-        this.isLoggedIn = true;
       });
+      eventBus.emit('userRegistered');
     },
     clearRegistrationForm() {
       this.registerForm.username = '';

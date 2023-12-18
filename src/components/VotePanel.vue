@@ -28,84 +28,53 @@
 
 <script>
 import { showMessage } from '@/utils/common';
+import { eventBus } from '@/utils/event-bus';
+
+import axios from 'axios';
 
 export default {
   name: 'VotePanel',
   data() {
     return {
-      users: [
-        {
-          id: 1,
-          name: '摩洛哥煎饼',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 2,
-          name: '捷豹',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 3,
-          name: 'kaoyah',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 4,
-          name: 'XiaoC',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 5,
-          name: '强少',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 6,
-          name: '带哥',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 7,
-          name: '尧尧',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 8,
-          name: 'AC',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 9,
-          name: '阿辉',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 10,
-          name: '阿明',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-        {
-          id: 11,
-          name: 'side',
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-          checked: false,
-        },
-      ],
+      users: [],
       selectedUsers: [], // 存储用户选择的投票选项
       isShowErrorMsg: false,
     };
   },
+  created() {
+    eventBus.on('userRegistered', () => {
+      this.fetchCandidates();
+    });
+  },
+  mounted() {
+    this.fetchCandidates();
+  },
   methods: {
+    async fetchCandidates() {
+      try {
+        const response = await axios.get('http://localhost:3000/api/candidates');
+        console.log(response);
+
+        if (response.data.code === 200) {
+          const candidates = response.data.data; // Assuming 'data' holds the candidate information
+
+          if (candidates && candidates.length > 0) {
+            this.users = candidates.map((candidate) => ({
+              id: candidate.userId,
+              name: candidate.username,
+              avatar: require('../assets/images/摩洛哥煎饼.jpg'),
+              checked: false,
+            }));
+          } else {
+            showMessage('候选人信息为空', 'warning', () => {});
+          }
+        } else {
+          showMessage('获取候选人有误', 'error', () => {});
+        }
+      } catch (error) {
+        showMessage('获取候选人信息失败', 'error', () => {});
+      }
+    },
     voteHim(user) {
       // 检查用户是否已在 selectedUsers 中
       const existingUser = this.selectedUsers.find((uid) => uid === user.id);
