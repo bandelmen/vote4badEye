@@ -42,27 +42,32 @@ export default {
     };
   },
   created() {
-    eventBus.on('userRegistered', () => {
+    eventBus.on('refreshCandidates', () => {
+      console.log('refreshCandidates');
       this.fetchCandidates();
     });
   },
   mounted() {
+    console.log('mounted: userRegistered');
     this.fetchCandidates();
   },
   methods: {
     async fetchCandidates() {
       try {
         const response = await axios.get('http://localhost:3000/api/candidates');
-        console.log(response);
+        console.log(response.data);
 
         if (response.data.code === 200) {
-          const candidates = response.data.data; // Assuming 'data' holds the candidate information
+          const candidates = response.data.data;
 
           if (candidates && candidates.length > 0) {
             this.users = candidates.map((candidate) => ({
               id: candidate.userId,
               name: candidate.username,
-              avatar: require('../assets/images/摩洛哥煎饼.jpg'),
+              // avatar: require('../assets/images/摩洛哥煎饼.jpg'),
+              avatar: candidate.imagePath
+                ? candidate.imagePath
+                : 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
               checked: false,
             }));
           } else {

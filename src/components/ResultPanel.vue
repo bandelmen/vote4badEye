@@ -230,7 +230,7 @@ export default {
   align-items: center;
 }
 
-.user-detail-avatar{
+.user-detail-avatar {
   margin-right: 10px;
 }
 

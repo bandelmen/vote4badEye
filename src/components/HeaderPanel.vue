@@ -15,12 +15,14 @@
               <el-dropdown-item>
                 <el-upload
                   class="avatar-uploader"
-                  action=""
+                  action="http://localhost:3000/upload/uploadAvatar"
                   :show-file-list="false"
                   :on-success="handleAvatarSuccess"
                   :before-upload="beforeAvatarUpload"
+                  name="avatar"
+                  :data="{ username: userInfo.username }"
                 >
-                  <el-icon><Picture /></el-icon>上传头像
+                  <el-icon><User /></el-icon>上传头像
                 </el-upload>
               </el-dropdown-item>
               <el-dropdown-item @click="logout"
@@ -146,25 +148,35 @@ export default {
   },
   mounted() {
     this.screenWidth = window.innerWidth;
-
     window.addEventListener('resize', this.updateScreenWidth);
 
-    const token = localStorage.getItem('token');
-    console.log(token, '=token');
+    const userDataJSON = JSON.parse(localStorage.getItem('userData'));
 
-    if (token) {
+    // console.log(userDataJSON.);
+
+    if (userDataJSON) {
+      const token = userDataJSON.token;
+
+      console.log(token);
       axios
-        .post('http://localhost:3000/auth/verifyToken', { token })
+        .post('http://localhost:3000/auth/verifyToken', null, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
         .then((response) => {
           console.log(response);
           if (response.data.code === 200) {
             this.isLoggedIn = true;
-
-            const storedUsername = localStorage.getItem('username');
-            const storedUserId = localStorage.getItem('userId');
-
-            this.userInfo.username = storedUsername;
-            this.userInfo.userId = storedUserId;
+            console.log(userDataJSON);
+            this.userInfo = {
+              email: userDataJSON.email,
+              username: userDataJSON.username,
+              userId: userDataJSON.userId,
+              avatar: userDataJSON.avatar
+                ? userDataJSON.avatar
+                : 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+            };
           }
         })
         .catch(() => {
@@ -178,10 +190,7 @@ export default {
   },
   methods: {
     logout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('username');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('email');
+      localStorage.removeItem('userData');
 
       this.userInfo.username = '';
       this.userInfo.userId = '';
@@ -229,10 +238,17 @@ export default {
         this.updateUserInfo(data);
         this.isLoggedIn = true;
       });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('username', data.username);
-      localStorage.setItem('userId', data.id);
-      localStorage.setItem('email', data.email);
+      // 将用户数据保存到 localStorage
+      localStorage.setItem(
+        'userData',
+        JSON.stringify({
+          token: data.token,
+          username: data.username,
+          userId: data.id,
+          email: data.email,
+          avatar: data.avatar,
+        })
+      );
     },
     clearLoginForm() {
       this.loginForm.email = '';
@@ -241,6 +257,14 @@ export default {
     closeLoginDialog() {
       this.isShowErrorMsg = false;
       this.showLoginDialog = false;
+    },
+    updateUserInfo(data) {
+      this.userInfo.email = data.email;
+      this.userInfo.username = data.username;
+      this.userInfo.userId = data.id;
+      if (data.avatar !== null) {
+        this.userInfo.avatar = data.avatar;
+      }
     },
     handleLoginFailure() {
       if (!this.isShowErrorMsg) {
@@ -281,7 +305,7 @@ export default {
         this.clearRegistrationForm();
         this.closeRegisterDialog();
       });
-      eventBus.emit('userRegistered');
+      eventBus.emit('refreshCandidates');
     },
     clearRegistrationForm() {
       this.registerForm.username = '';
@@ -307,11 +331,6 @@ export default {
       this.$refs.registerPasswordInput.focus();
     },
     // 通用模块
-    updateUserInfo(data) {
-      this.userInfo.email = data.email;
-      this.userInfo.username = data.username;
-      this.userInfo.userId = data.userId;
-    },
     handleRequestFailure() {
       if (!this.isShowErrorMsg) {
         this.isShowErrorMsg = true;
@@ -323,9 +342,20 @@ export default {
     updateScreenWidth() {
       this.screenWidth = window.innerWidth;
     },
-    handleAvatarSuccess(res, file) {
-      this.imageUrl = URL.createObjectURL(file.raw);
+    handleAvatarSuccess(res) {
+      console.log(res);
+      this.userInfo.avatar = res.data.fileUrl;
       showMessage('上传头像成功', 'success', () => {});
+
+      // 更新 localStorage 中的 userData 数据
+      const userDataJSON = localStorage.getItem('userData');
+      if (userDataJSON) {
+        const userData = JSON.parse(userDataJSON);
+        userData.avatar = res.data.fileUrl;
+        localStorage.setItem('userData', JSON.stringify(userData));
+      }
+
+      eventBus.emit('refreshCandidates');
     },
     beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
@@ -353,7 +383,7 @@ export default {
     showEmptyFieldsAlert() {
       if (!this.isShowErrorMsg) {
         this.isShowErrorMsg = true;
-        showMessage('请填写输入框', 'error', () => {
+        showMessage('请正确填写信息', 'error', () => {
           this.isShowErrorMsg = false;
         });
       }
