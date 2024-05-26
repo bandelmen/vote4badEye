@@ -2,27 +2,32 @@
   <header class="page-header">
     <div class="page-container">
       <div class="header-buttons" v-if="!isLoggedIn">
-        <el-button type="primary" @click="showLogin">登录</el-button>
-        <el-button type="success" @click="showRegister">注册</el-button>
+        <el-button type="primary" @click="showLoginDialog = true">登录</el-button>
+        <el-button type="success" @click="showRegisterDialog = true">注册</el-button>
       </div>
       <div class="user-info" v-else>
-        <el-avatar class="user-info_avatar" :src="userInfo.avatar" size="default" />
+        <el-avatar class="user-info_avatar" :src="userInfo.avatar" :size="32" />
         <span class="user-info_username">{{ userInfo.username }}</span>
         <el-dropdown>
-          <el-icon class="setting_icon" :size="20"><Setting /></el-icon>
+          <el-button class="setting_icon" circle>
+            <el-icon><Setting /></el-icon>
+          </el-button>
+
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item>
                 <el-upload
                   class="avatar-uploader"
-                  action="http://localhost:3000/upload/uploadAvatar"
+                  action="http://localhost:3000/api/avatars"
                   :show-file-list="false"
                   :on-success="handleAvatarSuccess"
+                  :on-error="handleAvatarError"
+                  :with-credentials="true"
                   :before-upload="beforeAvatarUpload"
                   name="avatar"
                   :data="{ username: userInfo.username }"
                 >
-                  <el-icon><User /></el-icon>上传头像
+                  <el-icon><UploadFilled /></el-icon>上传头像
                 </el-upload>
               </el-dropdown-item>
               <el-dropdown-item @click="logout"
@@ -35,49 +40,64 @@
     </div>
   </header>
 
-  <el-dialog v-model="showLoginDialog" title="用户登录" :show-close="false" :width="getDialogWidth">
-    <el-form :model="loginForm">
-      <el-form-item label="邮箱：" :label-width="formLabelWidth">
+  <el-dialog
+    v-model="showLoginDialog"
+    :destroy-on-close="true"
+    :close-on-click-modal="false"
+    title="用户登录"
+    :show-close="false"
+    :width="getDialogWidth"
+  >
+    <el-form ref="ruleLoginFormRef" :model="loginForm" :rules="loginRules">
+      <el-form-item label="邮箱：" prop="email" :label-width="formLabelWidth">
         <el-input
           v-model="loginForm.email"
           placeholder="请输入邮箱"
           @keyup.enter="focusLoginPasswordInput"
         />
       </el-form-item>
-      <el-form-item label="密码：" :label-width="formLabelWidth">
+      <el-form-item label="密码：" prop="password" :label-width="formLabelWidth">
         <el-input
           ref="loginPasswordInput"
-          v-model="loginForm.pwd"
+          v-model="loginForm.password"
           type="password"
           placeholder="请输入密码"
           show-password
-          @keyup.enter="confirmLoginDialog"
+          @keyup.enter="confirmLoginDialog('ruleLoginFormRef')"
         />
       </el-form-item>
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="cancelLoginDialog">取消</el-button>
-        <el-button type="primary" @click="confirmLoginDialog"> 确定 </el-button>
+        <el-button :disabled="isLoginBtnDisabled" @click="cancelLoginDialog">取消</el-button>
+        <el-button
+          type="primary"
+          :disabled="isLoginBtnDisabled"
+          @click="confirmLoginDialog('ruleLoginFormRef')"
+        >
+          确定
+        </el-button>
       </span>
     </template>
   </el-dialog>
 
   <el-dialog
     v-model="showRegisterDialog"
+    :destroy-on-close="true"
+    :close-on-click-modal="false"
     title="用户注册"
     :show-close="false"
     :width="getDialogWidth"
   >
-    <el-form :model="registerForm">
-      <el-form-item label="用户名：" :label-width="formLabelWidth">
+    <el-form ref="ruleRegisterFormRef" :model="registerForm" :rules="registerRules">
+      <el-form-item label="用户名：" prop="username" :label-width="formLabelWidth">
         <el-input
           v-model="registerForm.username"
           placeholder="请输入用户名"
           @keyup.enter="focusRegisterEmailInput"
         />
       </el-form-item>
-      <el-form-item label="邮箱：" :label-width="formLabelWidth">
+      <el-form-item label="邮箱：" prop="email" :label-width="formLabelWidth">
         <el-input
           ref="registerEmailInput"
           v-model="registerForm.email"
@@ -85,21 +105,27 @@
           @keyup.enter="focusRegisterPasswordInput"
         />
       </el-form-item>
-      <el-form-item label="密码：" :label-width="formLabelWidth">
+      <el-form-item label="密码：" prop="password" :label-width="formLabelWidth">
         <el-input
           ref="registerPasswordInput"
-          v-model="registerForm.pwd"
+          v-model="registerForm.password"
           type="password"
           placeholder="请输入密码"
           show-password
-          @keyup.enter="confirmRegisterDialog"
+          @keyup.enter="confirmRegisterDialog('ruleRegisterFormRef')"
         />
       </el-form-item>
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="cancelRegisterDialog">取消</el-button>
-        <el-button type="primary" @click="confirmRegisterDialog"> 确定 </el-button>
+        <el-button :disabled="isRegisterBtnDisabled" @click="cancelRegisterDialog">取消</el-button>
+        <el-button
+          :disabled="isRegisterBtnDisabled"
+          type="primary"
+          @click="confirmRegisterDialog('ruleRegisterFormRef')"
+        >
+          确定
+        </el-button>
       </span>
     </template>
   </el-dialog>
@@ -109,6 +135,7 @@
 import { showMessage } from '@/utils/common';
 import { eventBus } from '@/utils/event-bus';
 import axios from 'axios';
+import debounce from 'lodash/debounce';
 
 export default {
   name: 'HeaderPanel',
@@ -116,25 +143,48 @@ export default {
     return {
       showLoginDialog: false,
       showRegisterDialog: false,
+      isLoginBtnDisabled: false,
+      isRegisterBtnDisabled: false,
       registerForm: {
         username: '',
-        pwd: '',
+        password: '',
         email: '',
       },
       loginForm: {
         email: '',
-        pwd: '',
+        password: '',
       },
       userInfo: {
-        email: '',
-        username: '',
         userId: '',
-        avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+        username: '',
+        email: '',
+        avatar: '',
       },
       formLabelWidth: '100px',
       screenWidth: 0,
       isShowErrorMsg: false,
       isLoggedIn: false,
+      loginRules: {
+        email: [
+          { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+          { type: 'email', message: '请输入正确的邮箱地址', trigger: ['blur'] },
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, message: '密码长度至少为 6 位', trigger: 'blur' },
+        ],
+      },
+      registerRules: {
+        username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+        email: [
+          { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+          { type: 'email', message: '请输入正确的邮箱地址', trigger: ['blur'] },
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, message: '密码长度至少为 6 位', trigger: 'blur' },
+        ],
+      },
     };
   },
   computed: {
@@ -146,187 +196,161 @@ export default {
       }
     },
   },
+  created() {
+    this.verifyToken();
+  },
   mounted() {
     this.screenWidth = window.innerWidth;
     window.addEventListener('resize', this.updateScreenWidth);
-
-    const userDataJSON = JSON.parse(localStorage.getItem('userData'));
-
-    // console.log(userDataJSON.);
-
-    if (userDataJSON) {
-      const token = userDataJSON.token;
-
-      console.log(token);
-      axios
-        .post('http://localhost:3000/auth/verifyToken', null, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          console.log(response);
-          if (response.data.code === 200) {
-            this.isLoggedIn = true;
-            console.log(userDataJSON);
-            this.userInfo = {
-              email: userDataJSON.email,
-              username: userDataJSON.username,
-              userId: userDataJSON.userId,
-              avatar: userDataJSON.avatar
-                ? userDataJSON.avatar
-                : 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-            };
-          }
-        })
-        .catch(() => {
-          console.log('error token');
-          this.logout();
-        });
-    } else {
-      console.log('no token');
-      this.logout();
-    }
   },
   methods: {
-    logout() {
-      localStorage.removeItem('userData');
-
-      this.userInfo.username = '';
-      this.userInfo.userId = '';
-      this.isLoggedIn = false;
-    },
-    showLogin() {
-      this.showLoginDialog = true;
+    // 退出
+    async logout() {
+      try {
+        const response = await axios.post('/api/logout', null);
+        if (response.data.code === 200) {
+          // 更新组件状态
+          this.isLoggedIn = false;
+          this.userInfo = {};
+          localStorage.removeItem('userData');
+          eventBus.emit('userLogout');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
     },
     cancelLoginDialog() {
       this.showLoginDialog = false;
-    },
-    showRegister() {
-      this.showRegisterDialog = true;
+      this.clearLoginForm();
     },
     cancelRegisterDialog() {
       this.showRegisterDialog = false;
+      this.clearRegistrationForm();
     },
-    // 登录模块
-    async confirmLoginDialog() {
-      if (!this.loginForm.email || !this.loginForm.pwd) {
-        this.showEmptyFieldsAlert();
-        return;
-      }
+    // 新版登录模块
+    confirmLoginDialog: debounce(async function (formName) {
+      this.$refs[formName].validate(async (valid) => {
+        if (valid) {
+          this.isLoginBtnDisabled = true;
+          try {
+            const res = await axios.post('/api/login', {
+              email: this.loginForm.email,
+              password: this.loginForm.password,
+            });
 
-      try {
-        const response = await axios.post('http://localhost:3000/auth/login', {
-          email: this.loginForm.email,
-          password: this.loginForm.pwd,
-        });
-
-        if (response.data.code === 200) {
-          this.handleSuccessfulLogin(response.data.data);
-        } else {
-          this.handleLoginFailure();
+            if (res.data.code === 200) {
+              const resData = res.data.data;
+              this.closeLoginDialog();
+              this.clearLoginForm();
+              this.updateUserInfo(resData);
+              this.isLoggedIn = true;
+              eventBus.emit('userLogin');
+              showMessage('登录成功', 'success', () => {});
+              // 将用户数据保存到 localStorage
+              localStorage.setItem(
+                'userData',
+                JSON.stringify({
+                  username: resData.username,
+                  userId: resData.userId,
+                  email: resData.email,
+                  avatar: resData.avatar,
+                })
+              );
+            }
+          } catch (err) {
+            if (err.response && err.response.status === 401) {
+              this.handleLoginFailure(err.response.data.message);
+            } else {
+              this.handleRequestFailure();
+            }
+          }
         }
-      } catch (error) {
-        this.handleRequestFailure();
-      }
-    },
-    handleSuccessfulLogin(data) {
-      console.log('登录成功', data);
-      showMessage('登录成功', 'success', () => {
-        this.clearLoginForm();
-        this.closeLoginDialog();
-        this.updateUserInfo(data);
-        this.isLoggedIn = true;
       });
-      // 将用户数据保存到 localStorage
-      localStorage.setItem(
-        'userData',
-        JSON.stringify({
-          token: data.token,
-          username: data.username,
-          userId: data.id,
-          email: data.email,
-          avatar: data.avatar,
-        })
-      );
-    },
+    }, 500),
+    // 清空登陆表单
     clearLoginForm() {
       this.loginForm.email = '';
-      this.loginForm.pwd = '';
+      this.loginForm.password = '';
     },
+    // 关闭登录对话框
     closeLoginDialog() {
       this.isShowErrorMsg = false;
       this.showLoginDialog = false;
+      this.isLoginBtnDisabled = false;
     },
+    // 更新用户信息
     updateUserInfo(data) {
-      this.userInfo.email = data.email;
-      this.userInfo.username = data.username;
-      this.userInfo.userId = data.id;
-      if (data.avatar !== null) {
-        this.userInfo.avatar = data.avatar;
-      }
+      this.userInfo = data;
     },
-    handleLoginFailure() {
+    // 处理登录失败
+    handleLoginFailure(message) {
       if (!this.isShowErrorMsg) {
         this.isShowErrorMsg = true;
-        showMessage('用户名或密码错误', 'warning', () => {
+        showMessage(message, 'warning', () => {
           this.isShowErrorMsg = false;
         });
       }
     },
+    // 聚焦登录密码输入框
     focusLoginPasswordInput() {
       this.$refs.loginPasswordInput.focus();
     },
-    // 注册模块
-    async confirmRegisterDialog() {
-      if (!this.registerForm.username || !this.registerForm.email || !this.registerForm.pwd) {
-        this.showEmptyFieldsAlert();
-        return;
-      }
-      try {
-        const response = await axios.post('http://localhost:3000/auth/register', {
-          username: this.registerForm.username,
-          password: this.registerForm.pwd,
-          email: this.registerForm.email,
-        });
+    // 新版注册模块
+    confirmRegisterDialog: debounce(async function (formName) {
+      this.isRegisterBtnDisabled = true;
+      this.$refs[formName].validate(async (valid) => {
+        if (valid) {
+          try {
+            const res = await axios.post('/api/register', {
+              username: this.registerForm.username,
+              password: this.registerForm.password,
+              email: this.registerForm.email,
+            });
 
-        if (response.data.code === 200) {
-          this.handleSuccessfulRegistration(response.data.data);
-        } else {
-          this.handleRegistrationFailure();
+            if (res.data.code === 200) {
+              this.closeRegisterDialog();
+              this.clearRegistrationForm();
+              showMessage('注册成功', 'success', () => {});
+              eventBus.emit('refreshCandidates');
+            }
+          } catch (err) {
+            if (err.response && err.response.status === 400) {
+              this.handleRegistrationFailure('邮箱已被注册');
+            } else if (err.response && err.response.status === 500) {
+              this.handleRegistrationFailure('服务器错误，注册失败');
+            } else {
+              this.handleRequestFailure();
+            }
+          }
         }
-      } catch (error) {
-        this.handleRequestFailure();
-      }
-    },
-    handleSuccessfulRegistration(data) {
-      console.log('注册成功', data);
-      showMessage('注册成功', 'success', () => {
-        this.clearRegistrationForm();
-        this.closeRegisterDialog();
       });
-      eventBus.emit('refreshCandidates');
-    },
+    }, 500),
+    // 清空注册表单
     clearRegistrationForm() {
       this.registerForm.username = '';
       this.registerForm.email = '';
-      this.registerForm.pwd = '';
+      this.registerForm.password = '';
     },
+    // 关闭注册对话框
     closeRegisterDialog() {
       this.isShowErrorMsg = false;
       this.showRegisterDialog = false;
+      this.isRegisterBtnDisabled = false;
     },
-    handleRegistrationFailure() {
+    // 处理注册失败
+    handleRegistrationFailure(message) {
       if (!this.isShowErrorMsg) {
         this.isShowErrorMsg = true;
-        showMessage('邮箱已被注册', 'warning', () => {
+        showMessage(message, 'warning', () => {
           this.isShowErrorMsg = false;
         });
       }
     },
+    // 聚焦注册邮箱输入框
     focusRegisterEmailInput() {
       this.$refs.registerEmailInput.focus();
     },
+    // 聚焦注册密码输入框
     focusRegisterPasswordInput() {
       this.$refs.registerPasswordInput.focus();
     },
@@ -339,6 +363,7 @@ export default {
         });
       }
     },
+    // 监听屏幕宽度变化
     updateScreenWidth() {
       this.screenWidth = window.innerWidth;
     },
@@ -356,6 +381,14 @@ export default {
       }
 
       eventBus.emit('refreshCandidates');
+    },
+    handleAvatarError() {
+      if (!this.isShowErrorMsg) {
+        this.isShowErrorMsg = true;
+        showMessage('上传头像失败，请稍后再试', 'error', () => {
+          this.isShowErrorMsg = false;
+        });
+      }
     },
     beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
@@ -380,12 +413,31 @@ export default {
 
       return isJPG && isLt2M;
     },
-    showEmptyFieldsAlert() {
-      if (!this.isShowErrorMsg) {
-        this.isShowErrorMsg = true;
-        showMessage('请正确填写信息', 'error', () => {
-          this.isShowErrorMsg = false;
-        });
+    async verifyToken() {
+      try {
+        const res = await axios.post('/api/verifyToken');
+        console.log(res.data);
+        if (res.data.data.valid) {
+          console.log('用户验证成功');
+          // 如果 JWT 有效，更新登录状态为已登录
+          this.isLoggedIn = true;
+          // 从 localStorage 中获取用户数据
+          const userDataJSON = JSON.parse(localStorage.getItem('userData'));
+          console.log(userDataJSON);
+          if (userDataJSON !== null) {
+            this.userInfo = userDataJSON;
+          } else {
+            this.logout();
+          }
+        } else {
+          this.isLoggedIn = false;
+          this.userInfo = {};
+          localStorage.removeItem('userData');
+        }
+      } catch (err) {
+        this.isLoggedIn = false;
+        this.userInfo = {};
+        localStorage.removeItem('userData');
       }
     },
   },

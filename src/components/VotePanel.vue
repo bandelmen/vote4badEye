@@ -3,26 +3,26 @@
     <h1 class="vote-title">投票页面</h1>
     <div class="card-container">
       <div
-        v-for="(value, key) in users"
+        v-for="(value, key) in candidates"
         :key="key"
         class="card-box"
         :class="{
           'vote-bg': value.checked,
           'unvote-bg': selectedUsers.length >= 3 && !value.checked,
         }"
-        @click="voteHim(value)"
+        @click="vote(value)"
       >
         <div class="card-header">
           <div class="card-avatar">
             <el-avatar :size="30" :src="value.avatar" />
           </div>
           <div class="card-name">
-            <span>{{ value.name }}</span>
+            <span>{{ value.username }}</span>
           </div>
         </div>
       </div>
     </div>
-    <el-button type="primary" @click="showConfirmation">提交投票</el-button>
+    <el-button type="primary" @click="showConfirmation" :disabled="hasVoted">提交投票</el-button>
   </div>
 </template>
 
@@ -36,38 +36,70 @@ export default {
   name: 'VotePanel',
   data() {
     return {
-      users: [],
-      selectedUsers: [], // 存储用户选择的投票选项
+      candidates: [],
+      selectedUsers: [],
       isShowErrorMsg: false,
+      hasVoted: false,
     };
   },
   created() {
-    eventBus.on('refreshCandidates', () => {
-      console.log('refreshCandidates');
-      this.fetchCandidates();
+    eventBus.on('refreshCandidates', async () => {
+      await this.getCandidates();
+      await this.getVotes();
+    });
+
+    eventBus.on('userLogout', () => {
+      this.getCandidates();
+      this.selectedUsers = [];
+      this.hasVoted = false;
+    });
+
+    eventBus.on('userLogin', async () => {
+      await this.getCandidates();
+      await this.getVotes();
     });
   },
-  mounted() {
-    console.log('mounted: userRegistered');
-    this.fetchCandidates();
+  async mounted() {
+    await this.getCandidates();
+    await this.getVotes();
   },
   methods: {
-    async fetchCandidates() {
+    // 获取用户本周期内投票的数据
+    async getVotes() {
       try {
-        const response = await axios.get('http://localhost:3000/api/candidates');
-        console.log(response.data);
+        const response = await axios.get('/api/votes');
+        // 处理返回的数据，把每条数据 data.badEye.userId 存放到 selectedUsers 中
+        if (response.data.code === 200) {
+          const votes = response.data.data;
+          if (votes && votes.length > 0) {
+            this.hasVoted = true;
+            votes.forEach((vote) => {
+              this.selectedUsers.push(vote.badEye._id);
+              this.candidates.forEach((candidate) => {
+                if (candidate.candidateId === vote.badEye._id) {
+                  candidate.checked = true;
+                }
+              });
+            });
+          }
+        }
+      } catch (error) {
+        console.error('用户未登录');
+      }
+    },
+    async getCandidates() {
+      try {
+        const response = await axios.get('/api/candidates');
 
         if (response.data.code === 200) {
           const candidates = response.data.data;
 
           if (candidates && candidates.length > 0) {
-            this.users = candidates.map((candidate) => ({
-              id: candidate.userId,
-              name: candidate.username,
-              // avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-              avatar: candidate.imagePath
-                ? candidate.imagePath
-                : 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+            this.candidates = candidates.map((candidate) => ({
+              candidateId: candidate.candidateId,
+              username: candidate.username,
+              userId: candidate.userId,
+              avatar: candidate.imagePath,
               checked: false,
             }));
           } else {
@@ -80,23 +112,26 @@ export default {
         showMessage('获取候选人信息失败', 'error', () => {});
       }
     },
-    voteHim(user) {
-      // 检查用户是否已在 selectedUsers 中
-      const existingUser = this.selectedUsers.find((uid) => uid === user.id);
+    vote(user) {
+      if (!this.hasVoted) {
+        console.log('==', user);
+        // 检查用户是否已在 selectedUsers 中
+        const existingUser = this.selectedUsers.find((uid) => uid === user.candidateId);
 
-      if (existingUser) {
-        user.checked = false;
-        this.selectedUsers = this.selectedUsers.filter((uid) => uid !== user.id);
-      } else if (this.selectedUsers.length < 3) {
-        user.checked = true;
-        this.selectedUsers.push(user.id);
-      } else {
-        // 如果已经显示了错误提示，则不再重复显示
-        if (!this.isShowErrorMsg) {
-          this.isShowErrorMsg = true;
-          showMessage('不能选择超过三个烂眼儿', 'warning', () => {
-            this.isShowErrorMsg = false;
-          });
+        if (existingUser) {
+          user.checked = false;
+          this.selectedUsers = this.selectedUsers.filter((uid) => uid !== user.candidateId);
+        } else if (this.selectedUsers.length < 3) {
+          user.checked = true;
+          this.selectedUsers.push(user.candidateId);
+        } else {
+          // 如果已经显示了错误提示，则不再重复显示
+          if (!this.isShowErrorMsg) {
+            this.isShowErrorMsg = true;
+            showMessage('不能选择超过三个烂眼儿', 'warning', () => {
+              this.isShowErrorMsg = false;
+            });
+          }
         }
       }
     },
@@ -116,7 +151,7 @@ export default {
           type: 'warning',
         })
           .then(() => {
-            this.submitVotes();
+            this.submitVotes(this.selectedUsers);
           })
           .catch(() => {});
       } else {
@@ -126,13 +161,22 @@ export default {
           type: 'warning',
         })
           .then(() => {
-            this.submitVotes();
+            this.submitVotes(this.selectedUsers);
           })
           .catch(() => {});
       }
     },
-    submitVotes() {
-      showMessage('投票提交成功！', 'success', () => {});
+    async submitVotes(selectedUsers) {
+      console.log(selectedUsers);
+      try {
+        await axios.post('/api/votes', {
+          candidateIds: selectedUsers,
+        });
+        showMessage('投票提交成功！', 'success', () => {});
+        this.getVotes();
+      } catch (error) {
+        console.error('Error:', error);
+      }
     },
   },
 };

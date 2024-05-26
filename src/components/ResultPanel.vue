@@ -7,7 +7,7 @@
         <div v-else-if="index === 1" class="medal gold-medal">{{ getRankEmoji(0) }}</div>
         <div v-else class="medal bronze-medal">{{ getRankEmoji(2) }}</div>
         <div class="user-details">
-          <div class="user-detail-name">{{ user.name }}</div>
+          <div class="user-detail-name">{{ user.candidateName }}</div>
           <div class="user-detail-vote_num">总票数: {{ user.totalVotes }}</div>
         </div>
       </div>
@@ -21,169 +21,30 @@
     <div v-for="(user, index) in totalResults" :key="index" class="user-info-history">
       <div class="history-section-left">
         <div class="medal">{{ getRankEmoji(index) }}</div>
-        <el-avatar class="user-detail-avatar" :size="30" :src="user.avatar" />
-        <div class="user-detail-name">{{ user.name }}</div>
+        <div v-for="(user, index) in user" :key="index" class="user-info-total">
+          <el-avatar class="user-detail-avatar" :size="30" :src="user.imagePath" />
+          <div class="user-detail-name">{{ user.candidateName }}</div>
+        </div>
       </div>
-      <div class="user-detail-vote_num">总票数: {{ user.totalVotes }}</div>
+      <div class="user-detail-vote_num">总票数: {{ user[0].totalVotes }}</div>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'ResultPanel',
   data() {
     return {
-      weeklyResults: [
-        {
-          id: 1,
-          name: '摩洛哥煎饼',
-          totalVotes: 7,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 2,
-          name: '捷豹',
-          totalVotes: 4,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 3,
-          name: 'kaoyah',
-          totalVotes: 9,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 4,
-          name: 'XiaoC',
-          totalVotes: 2,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 5,
-          name: '强少',
-          totalVotes: 11,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 6,
-          name: '带哥',
-          totalVotes: 6,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 7,
-          name: '尧尧',
-          totalVotes: 8,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 8,
-          name: 'AC',
-          totalVotes: 5,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 9,
-          name: '阿辉',
-          totalVotes: 10,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 10,
-          name: '阿明',
-          totalVotes: 3,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 11,
-          name: 'side',
-          totalVotes: 12,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-      ],
-      totalResults: [
-        {
-          id: 1,
-          name: '摩洛哥煎饼',
-          totalVotes: 17,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 2,
-          name: '捷豹',
-          totalVotes: 24,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 3,
-          name: 'kaoyah',
-          totalVotes: 19,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 4,
-          name: 'XiaoC',
-          totalVotes: 21,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 5,
-          name: '强少',
-          totalVotes: 17,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 6,
-          name: '带哥',
-          totalVotes: 13,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 7,
-          name: '尧尧',
-          totalVotes: 38,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 8,
-          name: 'AC',
-          totalVotes: 15,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 9,
-          name: '阿辉',
-          totalVotes: 18,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 10,
-          name: '阿明',
-          totalVotes: 21,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-        {
-          id: 11,
-          name: 'side',
-          totalVotes: 32,
-          avatar: require('../assets/images/摩洛哥煎饼.jpg'),
-        },
-      ],
+      weeklyResult: [],
+      totalResults: [],
     };
   },
   computed: {
-    sortedUsers() {
-      return this.weeklyResults.slice().sort((a, b) => {
-        if (a.totalVotes !== b.totalVotes) {
-          return b.totalVotes - a.totalVotes; // 按照总票数降序排列
-        } else {
-          return a.name.localeCompare(b.name); // 如果总票数相同，按字母顺序排列
-        }
-      });
-    },
     topThreeTotalResults() {
-      const sortedUsers = this.sortedUsers.slice(0, 3);
+      const sortedUsers = this.weeklyResult.slice(0, 3);
       if (sortedUsers.length === 3) {
         const temp = sortedUsers[0];
         sortedUsers[0] = sortedUsers[1];
@@ -192,12 +53,92 @@ export default {
       return sortedUsers;
     },
   },
+  async mounted() {
+    await this.getTop();
+    await this.getTotal();
+  },
   methods: {
     getRankEmoji(index) {
       if (index === 0) return '🥇'; // 金牌
       if (index === 1) return '🥈'; // 银牌
       if (index === 2) return '🥉'; // 铜牌
       return index + 1;
+    },
+    // 本周排名
+    async getTop() {
+      try {
+        const response = await axios.get('/api/votes/top');
+        if (response.data.code === 200) {
+          console.log('本周排名：', response.data.data);
+          this.weeklyResult = this.mergeTop(response.data.data);
+        }
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    },
+    // 合并 totalVotes 一样的数据
+    mergeTop(data) {
+      const mergedResults = [];
+
+      // 遍历数据，将相同投票数的候选人名称合并
+      for (let i = 0; i < data.length; i++) {
+        const current = data[i];
+        const prev = data[i - 1];
+
+        if (prev && prev.totalVotes === current.totalVotes) {
+          // 如果当前候选人与前一个候选人的投票数相同，则合并名称
+          mergedResults[mergedResults.length - 1].candidateName += ` / ${current.candidateName}`;
+        } else {
+          // 如果投票数不同，则直接添加新的数据项
+          mergedResults.push({
+            totalVotes: current.totalVotes,
+            candidateName: current.candidateName,
+          });
+        }
+      }
+
+      return mergedResults;
+    },
+    // 总票数
+    async getTotal() {
+      try {
+        const response = await axios.get('/api/votes/total');
+        if (response.data.code === 200) {
+          console.log('总票数：', response.data.data);
+          this.totalResults = this.mergeTotal(response.data.data);
+        }
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    },
+    mergeTotal(data) {
+      const mergedResults = [];
+
+      let currentTotal = null;
+      let currentGroup = [];
+
+      // 遍历数据，根据投票数分组合并
+      for (const user of data) {
+        if (currentTotal === null || currentTotal === user.totalVotes) {
+          // 如果是第一个数据或者投票数与当前分组相同，则将当前用户添加到当前分组中
+          currentGroup.push(user);
+        } else {
+          // 如果投票数与当前分组不同，则将当前分组添加到结果数组中，并创建新的分组
+          mergedResults.push([...currentGroup]);
+          currentGroup = [user];
+        }
+
+        currentTotal = user.totalVotes;
+      }
+
+      // 将最后一个分组添加到结果数组中
+      if (currentGroup.length > 0) {
+        mergedResults.push([...currentGroup]);
+      }
+
+      console.log(mergedResults);
+
+      return mergedResults;
     },
   },
 };
@@ -243,6 +184,12 @@ export default {
   background-color: #f5f5f5;
   border-radius: 4px;
   height: 40px;
+}
+
+.user-info-total {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
 }
 
 .medal {
