@@ -29,7 +29,6 @@ export default {
 </script>
 
 <style>
-/* 样式代码与之前相同 */
 * {
   padding: 0;
   margin: 0;
@@ -54,7 +53,7 @@ export default {
 
   .left-side,
   .right-side {
-    width: 100%;
+    width: auto;
     margin: 10px 10px;
   }
 }

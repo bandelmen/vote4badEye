@@ -14,7 +14,7 @@
     </div>
   </div>
 
-  <hr class="divider" />
+  <el-divider></el-divider>
 
   <div class="history-section">
     <h1 class="section-title">历史总计排名</h1>
