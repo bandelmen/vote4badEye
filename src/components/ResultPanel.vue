@@ -181,6 +181,8 @@ export default {
 .history-section-left {
   display: flex;
   align-items: center;
+  max-width: 70%;
+  overflow: auto;
 }
 
 .user-detail-avatar {
