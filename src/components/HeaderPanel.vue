@@ -214,6 +214,7 @@ export default {
           this.userInfo = {};
           localStorage.removeItem('userData');
           eventBus.emit('userLogout');
+          eventBus.emit('clearVotes');
         }
       } catch (error) {
         console.error('Error:', error);
@@ -245,6 +246,7 @@ export default {
               this.updateUserInfo(resData);
               this.isLoggedIn = true;
               eventBus.emit('userLogin');
+              eventBus.emit('getVotes');
               showMessage('登录成功', 'success', () => {});
               // 将用户数据保存到 localStorage
               localStorage.setItem(
@@ -258,6 +260,7 @@ export default {
               );
             }
           } catch (err) {
+            this.isLoginBtnDisabled = false;
             if (err.response && err.response.status === 401) {
               this.handleLoginFailure(err.response.data.message);
             } else {
@@ -314,6 +317,7 @@ export default {
               eventBus.emit('refreshCandidates');
             }
           } catch (err) {
+            this.isRegisterBtnDisabled = false;
             if (err.response && err.response.status === 400) {
               this.handleRegistrationFailure('邮箱已被注册');
             } else if (err.response && err.response.status === 500) {
@@ -430,14 +434,10 @@ export default {
             this.logout();
           }
         } else {
-          this.isLoggedIn = false;
-          this.userInfo = {};
-          localStorage.removeItem('userData');
+          this.logout();
         }
       } catch (err) {
-        this.isLoggedIn = false;
-        this.userInfo = {};
-        localStorage.removeItem('userData');
+        this.logout();
       }
     },
   },

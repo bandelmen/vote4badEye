@@ -22,7 +22,9 @@
         </div>
       </div>
     </div>
-    <el-button type="primary" @click="showConfirmation" :disabled="hasVoted">提交投票</el-button>
+    <el-button type="primary" v-if="isShowVotebtn" @click="showConfirmation" :disabled="hasVoted"
+      >提交投票</el-button
+    >
   </div>
 </template>
 
@@ -40,6 +42,7 @@ export default {
       selectedUsers: [],
       isShowErrorMsg: false,
       hasVoted: false,
+      isShowVotebtn: false,
     };
   },
   created() {
@@ -49,12 +52,14 @@ export default {
     });
 
     eventBus.on('userLogout', () => {
-      this.getCandidates();
+      this.candidates = [];
       this.selectedUsers = [];
       this.hasVoted = false;
+      this.isShowVotebtn = false;
     });
 
     eventBus.on('userLogin', async () => {
+      this.isShowVotebtn = true;
       await this.getCandidates();
       await this.getVotes();
     });
@@ -102,14 +107,17 @@ export default {
               avatar: candidate.imagePath,
               checked: false,
             }));
+
+            this.isShowVotebtn = true;
           } else {
-            showMessage('候选人信息为空', 'warning', () => {});
+            this.candidates = [];
           }
         } else {
           showMessage('获取候选人有误', 'error', () => {});
+          this.candidates = [];
         }
       } catch (error) {
-        showMessage('获取候选人信息失败', 'error', () => {});
+        this.candidates = [];
       }
     },
     vote(user) {
@@ -174,6 +182,7 @@ export default {
         });
         showMessage('投票提交成功！', 'success', () => {});
         this.getVotes();
+        eventBus.emit('getVotes');
       } catch (error) {
         console.error('Error:', error);
       }

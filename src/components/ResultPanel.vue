@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import { eventBus } from '@/utils/event-bus';
 import axios from 'axios';
 
 export default {
@@ -52,6 +53,17 @@ export default {
       }
       return sortedUsers;
     },
+  },
+  created() {
+    eventBus.on('clearVotes', () => {
+      this.weeklyResult = [];
+      this.totalResults = [];
+    });
+
+    eventBus.on('getVotes', async () => {
+      await this.getTop();
+      await this.getTotal();
+    });
   },
   async mounted() {
     await this.getTop();
