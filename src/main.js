@@ -5,6 +5,8 @@ import App from './App.vue';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 import axios from 'axios';
 
+export const API_BASE_URL = 'http://localhost:3000';
+
 const app = createApp(App);
 
 app.use(ElementPlus);
@@ -13,7 +15,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);
 }
 
-axios.defaults.baseURL = 'http://localhost:3000';
+axios.defaults.baseURL = API_BASE_URL;
 axios.defaults.withCredentials = true;
 
 app.config.globalProperties.$axios = axios;

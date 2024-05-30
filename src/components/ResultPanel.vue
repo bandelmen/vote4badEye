@@ -2,9 +2,18 @@
   <div class="weekly-section">
     <h1 class="section-title">本周烂眼儿排名</h1>
     <div class="medal-container">
-      <div v-for="(user, index) in topThreeTotalResults" :key="index" class="user-info-weekly">
-        <div v-if="index === 0" class="medal silver-medal">{{ getRankEmoji(1) }}</div>
-        <div v-else-if="index === 1" class="medal gold-medal">{{ getRankEmoji(0) }}</div>
+      <div
+        v-for="(user, index) in weeklyResult"
+        :key="index"
+        class="user-info-weekly"
+        :class="{
+          gold: index === 0,
+          silver: index === 1,
+          bronze: index === 2,
+        }"
+      >
+        <div v-if="index === 0" class="medal gold-medal">{{ getRankEmoji(0) }}</div>
+        <div v-else-if="index === 1" class="medal silver-medal">{{ getRankEmoji(1) }}</div>
         <div v-else class="medal bronze-medal">{{ getRankEmoji(2) }}</div>
         <div class="user-details">
           <div class="user-detail-name">{{ user.candidateName }}</div>
@@ -44,15 +53,15 @@ export default {
     };
   },
   computed: {
-    topThreeTotalResults() {
-      const sortedUsers = this.weeklyResult.slice(0, 3);
-      if (sortedUsers.length === 3) {
-        const temp = sortedUsers[0];
-        sortedUsers[0] = sortedUsers[1];
-        sortedUsers[1] = temp;
-      }
-      return sortedUsers;
-    },
+    // topThreeTotalResults() {
+    //   const sortedUsers = this.weeklyResult.slice(0, 3);
+    //   if (sortedUsers.length === 3) {
+    //     const temp = sortedUsers[0];
+    //     sortedUsers[0] = sortedUsers[1];
+    //     sortedUsers[1] = temp;
+    //   }
+    //   return sortedUsers;
+    // },
   },
   created() {
     eventBus.on('clearVotes', () => {
@@ -171,6 +180,18 @@ export default {
   width: 31%;
   border-radius: 5px;
   background-color: #f5f5f5;
+}
+
+.gold {
+  order: 2;
+}
+
+.silver {
+  order: 1;
+}
+
+.bronze {
+  order: 3;
 }
 
 .section-title {

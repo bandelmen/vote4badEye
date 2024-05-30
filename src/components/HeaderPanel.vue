@@ -18,7 +18,7 @@
               <el-dropdown-item>
                 <el-upload
                   class="avatar-uploader"
-                  action="http://localhost:3000/api/avatars"
+                  :action="`${API_BASE_URL}/api/avatars`"
                   :show-file-list="false"
                   :on-success="handleAvatarSuccess"
                   :on-error="handleAvatarError"
@@ -30,9 +30,9 @@
                   <el-icon><UploadFilled /></el-icon>上传头像
                 </el-upload>
               </el-dropdown-item>
-              <el-dropdown-item @click="logout"
-                ><el-icon><SwitchButton /></el-icon>退出登录</el-dropdown-item
-              >
+              <el-dropdown-item @click="logout">
+                <el-icon><SwitchButton /></el-icon>退出登录
+              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -136,11 +136,13 @@ import { showMessage } from '@/utils/common';
 import { eventBus } from '@/utils/event-bus';
 import axios from 'axios';
 import debounce from 'lodash/debounce';
+import { API_BASE_URL } from '@/main';
 
 export default {
   name: 'HeaderPanel',
   data() {
     return {
+      API_BASE_URL,
       showLoginDialog: false,
       showRegisterDialog: false,
       isLoginBtnDisabled: false,
@@ -420,7 +422,7 @@ export default {
     async verifyToken() {
       try {
         const res = await axios.post('/api/verifyToken');
-        console.log(res.data);
+        console.log('verifyToken', res.data);
         if (res.data.data.valid) {
           console.log('用户验证成功');
           // 如果 JWT 有效，更新登录状态为已登录
