@@ -26,7 +26,7 @@
   <el-divider></el-divider>
 
   <div class="history-section">
-    <h1 class="section-title">历史总计排名</h1>
+    <h1 class="section-title">历史烂眼儿总计排名</h1>
     <div v-for="(user, index) in totalResults" :key="index" class="user-info-history">
       <div class="history-section-left">
         <div class="medal">{{ getRankEmoji(index) }}</div>
