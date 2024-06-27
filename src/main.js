@@ -5,7 +5,8 @@ import App from './App.vue';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://localhost:3000';
+// 使用环境变量来设置 API_BASE_URL
+export const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000';
 
 const app = createApp(App);
 

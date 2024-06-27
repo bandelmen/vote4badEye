@@ -25,7 +25,7 @@
                   :with-credentials="true"
                   :before-upload="beforeAvatarUpload"
                   name="avatar"
-                  :data="{ username: userInfo.username }"
+                  :data="{ email: userInfo.email, username: userInfo.username }"
                 >
                   <el-icon><UploadFilled /></el-icon>上传头像
                 </el-upload>
@@ -375,14 +375,14 @@ export default {
     },
     handleAvatarSuccess(res) {
       console.log(res);
-      this.userInfo.avatar = res.data.fileUrl;
+      this.userInfo.avatar = res.url;
       showMessage('上传头像成功', 'success', () => {});
 
       // 更新 localStorage 中的 userData 数据
       const userDataJSON = localStorage.getItem('userData');
       if (userDataJSON) {
         const userData = JSON.parse(userDataJSON);
-        userData.avatar = res.data.fileUrl;
+        userData.avatar = res.url;
         localStorage.setItem('userData', JSON.stringify(userData));
       }
 
